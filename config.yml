@@ -1,0 +1,45 @@
+# configuração geral do plugin
+# Permissôes:
+# h_tags.adm - acessar o comando de tags do servidor.
+Config:
+  tag: "&6[Tag]"
+  
+  # configure a parte de cima do tab aqui
+  header:
+  - ' '
+  - '&bAqui fica o header'
+  - ' '
+  
+  # configure a parte de baixo do tab aqui
+  footer:
+  - ' '
+  - '&cAqui fica o footer'
+  - ' '
+  
+  # Tempo em segundos que vai atualizar o placar do jogador (não impacta na performance for se tratar de packets e estar em async.)
+  updateTime: 1
+  
+  # ativar hologramas ao chegar perto do jogador ?
+  holograms: true
+  
+  # coloque aqui o texto que ficará no holograma do jogador.
+  hologram_text: "&c%player_health%&4❤"
+  
+  # distancia do jogador para ativar o holograma (em blocos).
+  hologram_distance: 5
+  
+  # configure aqui a tag default caso o jogador não tenha permissão.
+  defaultPrefix: "&7[J] {cor}"
+  defaultSuffix: " &c%player_health%&4❤"
+  colorDefault: "&7"
+
+# Config das tags
+# posição de A -> Z
+tags:
+  # aqui vai o nome do cargo
+  ceo:
+    # aqui vai a permissao para ter a tag.
+    permission: "*"
+    position: "A"
+    prefix: "&6[CEO] {cor}"
+    suffix: " &c%player_health%&4❤" # suffix com o placeholderapi

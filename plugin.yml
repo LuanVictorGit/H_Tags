@@ -1,0 +1,9 @@
+name: H_Tags
+version: 0.1
+author: lHawk_
+main: me.htags.Core
+depend: [PlaceholderAPI]
+description: plugin para a gerencia de tags do servidor.
+commands:
+  tag:
+    aliases: [tags, htag, htags]
