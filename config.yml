@@ -25,6 +25,9 @@ Config:
   # coloque aqui o texto que ficará no holograma do jogador.
   hologram_text: "&c%player_health%&4❤"
   
+  # coloque aqui a altura do holograma na cabeça do jogador, deixe 0 como default.
+  hologram_height: 0
+  
   # distancia do jogador para ativar o holograma (em blocos).
   hologram_distance: 5
   
@@ -41,5 +44,11 @@ tags:
     # aqui vai a permissao para ter a tag.
     permission: "*"
     position: "A"
+    prefix: "&6[CEO] {cor}"
+    suffix: " &c%player_health%&4❤" # suffix com o placeholderapi
+  membro:
+    # aqui vai a permissao para ter a tag.
+    permission: "tags.membro"
+    position: "B"
     prefix: "&6[CEO] {cor}"
     suffix: " &c%player_health%&4❤" # suffix com o placeholderapi

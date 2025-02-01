@@ -11,6 +11,7 @@ import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
 
 import lombok.Getter;
@@ -135,7 +136,10 @@ public class Core extends JavaPlugin {
 						Location loc1 = playerTarget.getLocation();
 						Location loc2 = playerViewer.getLocation();
 						if (!loc1.getWorld().equals(loc2.getWorld()) || loc1.distance(loc2) > configgeral.getHologram_distance()
-							|| !playerTarget.isOnline() || playerTarget.isDead()) {
+							|| !playerTarget.isOnline() 
+							|| playerTarget.isDead() 
+							|| !playerViewer.canSee(playerTarget)
+							|| playerTarget.getActivePotionEffects().stream().filter(potion -> potion.getType() == PotionEffectType.INVISIBILITY).findFirst().orElse(null) != null) {
 							if (target.getHashHolograms().containsKey(viewer)) {
 								PacketPlayOutEntityDestroy destroyHologram = new PacketPlayOutEntityDestroy(target.getHologram().getId());
 								PlayerTag.sendPacket(playerViewer, destroyHologram);
@@ -146,9 +150,9 @@ public class Core extends JavaPlugin {
 						Location loc = playerTarget.getLocation();
 						hologram.world = ((CraftWorld)loc.getWorld()).getHandle();
 						if (!playerTarget.isSneaking()) {
-							hologram.setLocation(loc.getX(), loc.getY()+1.585, loc.getZ(), 0, 0);
+							hologram.setLocation(loc.getX(), (loc.getY()+1.585)+configgeral.getHologram_height(), loc.getZ(), 0, 0);
 						} else {
-							hologram.setLocation(loc.getX(), loc.getY()+1.25, loc.getZ(), 0, 0);
+							hologram.setLocation(loc.getX(), (loc.getY()+1.25)+configgeral.getHologram_height(), loc.getZ(), 0, 0);
 						}
 						
 						PacketPlayOutEntityTeleport packetTeleportHologram = new PacketPlayOutEntityTeleport(hologram);

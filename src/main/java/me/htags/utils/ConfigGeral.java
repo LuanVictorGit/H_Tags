@@ -15,12 +15,14 @@ public class ConfigGeral {
 	
 	private boolean holograms;
 	private int hologram_distance;
+	private double hologram_height;
 	
 	public ConfigGeral() {
 		FileConfiguration config = Core.getInstance().getConfig();
 		ConfigurationSection section = config.getConfigurationSection("Config");
 		
 		hologram_text = section.getString("hologram_text").replace("&", "§");
+		hologram_height = section.contains("hologram_height") ? section.getDouble("hologram_height") : 0;
 		holograms = section.getBoolean("holograms");
 		hologram_distance = section.getInt("hologram_distance");
 		colorDefault = section.getString("colorDefault").replace("&", "§"); // pegando a cor padrão do {cor}

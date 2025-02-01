@@ -1,6 +1,7 @@
 package me.htags.objects;
 
 import java.util.ArrayList;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
@@ -19,13 +20,11 @@ import me.htags.objects.manager.Manager;
 import me.htags.utils.API;
 import me.htags.utils.ConfigGeral;
 import net.minecraft.server.v1_8_R3.EntityArmorStand;
-import net.minecraft.server.v1_8_R3.IScoreboardCriteria;
 import net.minecraft.server.v1_8_R3.NBTTagCompound;
 import net.minecraft.server.v1_8_R3.Packet;
 import net.minecraft.server.v1_8_R3.PacketPlayOutEntityDestroy;
 import net.minecraft.server.v1_8_R3.PacketPlayOutScoreboardTeam;
 import net.minecraft.server.v1_8_R3.Scoreboard;
-import net.minecraft.server.v1_8_R3.ScoreboardObjective;
 import net.minecraft.server.v1_8_R3.ScoreboardTeam;
 
 @Getter
@@ -85,65 +84,65 @@ public class PlayerTag {
 		if (updating)
 			return; // Evita múltiplas atualizações simultâneas
 		updating = true;
+		try {
+			Player p = getPlayer();
+			ConfigTag config = Manager.get().getTag(p);
+			// Se a configuração não existir, utiliza a configuração padrão
+			config = (config == null) ? Core.getInstance().getConfigtag() : config;
 
-		Player p = getPlayer();
-		ConfigTag config = Manager.get().getTag(p);
-		// Se a configuração não existir, utiliza a configuração padrão
-		config = (config == null) ? Core.getInstance().getConfigtag() : config;
+			String color = ConfigGeral.get().getColorDefault();
+			reset(); // Reseta as configurações antigas
 
-		String color = ConfigGeral.get().getColorDefault();
-		reset(); // Reseta as configurações antigas
+			// Cria uma nova equipe para o jogador
+			team = board.createTeam(config.getPosition() + idCode);
+			team.getPlayerNameSet().add(player.getName());
+			
+			// Envia o prefixo e sufixo para todos os jogadores online
+			for (Player viewer : Bukkit.getOnlinePlayers()) {
+				String prefix = config.getPrefix();
+				String suffix = config.getSuffix();
 
-		// Cria uma nova equipe para o jogador
-		team = board.createTeam(config.getPosition() + idCode);
-		team.getPlayerNameSet().add(player.getName());
-		
-		// Envia o prefixo e sufixo para todos os jogadores online
-		for (Player viewer : Bukkit.getOnlinePlayers()) {
-			String prefix = config.getPrefix();
-			String suffix = config.getSuffix();
+				// Dispara o evento de atualização de tag
+				PlayerUpdateTagEvent event = new PlayerUpdateTagEvent(p, viewer, config, prefix, suffix, color);
+				Bukkit.getPluginManager().callEvent(event);
 
-			// Dispara o evento de atualização de tag
-			PlayerUpdateTagEvent event = new PlayerUpdateTagEvent(p, viewer, config, prefix, suffix, color);
-			Bukkit.getPluginManager().callEvent(event);
+				prefix = event.getPrefix();
+				suffix = event.getSuffix();
+				color = event.getColor();
 
-			prefix = event.getPrefix();
-			suffix = event.getSuffix();
-			color = event.getColor();
+				// Substitui placeholders no prefixo e sufixo
+				prefix = (prefix != null)
+						? PlaceholderAPI.setPlaceholders(player, prefix.replace("{cor}", color).replace("&", "§"))
+						: null;
+				suffix = (suffix != null)
+						? PlaceholderAPI.setPlaceholders(player, suffix.replace("{cor}", color).replace("&", "§"))
+						: null;
 
-			// Substitui placeholders no prefixo e sufixo
-			prefix = (prefix != null)
-					? PlaceholderAPI.setPlaceholders(player, prefix.replace("{cor}", color).replace("&", "§"))
-					: null;
-			suffix = (suffix != null)
-					? PlaceholderAPI.setPlaceholders(player, suffix.replace("{cor}", color).replace("&", "§"))
-					: null;
+				// Garante que prefixo e sufixo não ultrapassem 16 caracteres
+				if (prefix != null && prefix.length() > 16)
+					prefix = prefix.substring(0, 16);
+				if (suffix != null && suffix.length() > 16)
+					suffix = suffix.substring(0, 16);
 
-			// Garante que prefixo e sufixo não ultrapassem 16 caracteres
-			if (prefix != null && prefix.length() > 16)
-				prefix = prefix.substring(0, 16);
-			if (suffix != null && suffix.length() > 16)
-				suffix = suffix.substring(0, 16);
+				if (prefix != null)
+					team.setPrefix(prefix);
+				if (suffix != null)
+					team.setSuffix(suffix);
 
-			if (prefix != null)
-				team.setPrefix(prefix);
-			if (suffix != null)
-				team.setSuffix(suffix);
+				// Cria o pacote de atualização da equipe para o jogador visualizador
+				PacketPlayOutScoreboardTeam packetTeam = new PacketPlayOutScoreboardTeam(team, 0);
+				// envia o pacote para os jogadores.
+				sendPacket(viewer, packetTeam);
+			}
 
-			// criando o bellowname.
-			ScoreboardObjective so = board.registerObjective(randomCode(12), IScoreboardCriteria.g);
-			so.setDisplayName("§c"+p.getHealth()+ "§4❤");
+			// Atualiza o cabeçalho e rodapé do tablist
+			API.get().sendTablist(p, PlaceholderAPI.setPlaceholders(p, ConfigGeral.get().getHeader()), PlaceholderAPI.setPlaceholders(p, ConfigGeral.get().getFooter()));
 
-			// Cria o pacote de atualização da equipe para o jogador visualizador
-			PacketPlayOutScoreboardTeam packetTeam = new PacketPlayOutScoreboardTeam(team, 0);
-			// envia o pacote para os jogadores.
-			sendPacket(viewer, packetTeam);
+			updating = false;
+		} catch (Exception e) {
+			updating = false;
+			update();
 		}
-
-		// Atualiza o cabeçalho e rodapé do tablist
-		API.get().sendTablist(p, PlaceholderAPI.setPlaceholders(p, ConfigGeral.get().getHeader()), PlaceholderAPI.setPlaceholders(p, ConfigGeral.get().getFooter()));
-
-		updating = false;
 	}
 
 	// Retorna o objeto Player, atualizando caso necessário
