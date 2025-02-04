@@ -6,9 +6,11 @@ import org.bukkit.craftbukkit.v1_8_R3.CraftWorld;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
+import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffectType;
@@ -64,6 +66,12 @@ public class Core extends JavaPlugin {
 			}
 			
 			@EventHandler(priority = EventPriority.HIGHEST)
+			public void move(PlayerMoveEvent e) {
+				if (!configgeral.isHolograms()) return;
+				PlayerTag.check(e.getPlayer()).setPreviewLocation(e.getTo().clone());
+			}
+			
+			@EventHandler(priority = EventPriority.HIGHEST)
 			public void death(PlayerDeathEvent e) {
 				Bukkit.getScheduler().runTask(Core.getInstance(), ()->Tag.updateAllTag());
 			}
@@ -82,6 +90,8 @@ public class Core extends JavaPlugin {
 			pt.reset();
 			pt.remove();
 		}
+		if (task != null) task.cancel();
+		HandlerList.unregisterAll(this);
 		sendConsole(" ");
 		sendConsole(tag + " &cH_Tags desligado com sucesso! &6[Author lHawk_] " + version);
 		sendConsole(" ");
@@ -128,17 +138,21 @@ public class Core extends JavaPlugin {
 				for (int i = 0; i < manager.getPlayers().size(); i++) {
 					PlayerTag target = manager.getPlayers().get(i);
 					Player playerTarget = target.getPlayer();
+					PlayerTag pt = PlayerTag.check(playerTarget);
 					EntityArmorStand hologram = target.getHologram();
 					loop: for (int j = 0; j < manager.getPlayers().size(); j++) {
 						PlayerTag viewer = manager.getPlayers().get(j);
 						Player playerViewer = viewer.getPlayer();
 						if (playerTarget.equals(playerViewer)) continue loop;
-						Location loc1 = playerTarget.getLocation();
+						Location loc1 = pt.getPreviewLocation() == null ? playerTarget.getLocation() : pt.getPreviewLocation();
 						Location loc2 = playerViewer.getLocation();
+						PlayerUpdateHologramEvent event = new PlayerUpdateHologramEvent(playerTarget, playerViewer, PlaceholderAPI.setPlaceholders(playerTarget, configgeral.getHologram_text()));
+						Bukkit.getPluginManager().callEvent(event);
 						if (!loc1.getWorld().equals(loc2.getWorld()) || loc1.distance(loc2) > configgeral.getHologram_distance()
 							|| !playerTarget.isOnline() 
 							|| playerTarget.isDead() 
 							|| !playerViewer.canSee(playerTarget)
+							|| event.isCancelled()
 							|| playerTarget.getActivePotionEffects().stream().filter(potion -> potion.getType() == PotionEffectType.INVISIBILITY).findFirst().orElse(null) != null) {
 							if (target.getHashHolograms().containsKey(viewer)) {
 								PacketPlayOutEntityDestroy destroyHologram = new PacketPlayOutEntityDestroy(target.getHologram().getId());
@@ -147,7 +161,7 @@ public class Core extends JavaPlugin {
 							}
 							continue loop;
 						}
-						Location loc = playerTarget.getLocation();
+						Location loc = pt.getPreviewLocation() == null ? playerTarget.getLocation() : pt.getPreviewLocation();
 						hologram.world = ((CraftWorld)loc.getWorld()).getHandle();
 						if (!playerTarget.isSneaking()) {
 							hologram.setLocation(loc.getX(), (loc.getY()+1.585)+configgeral.getHologram_height(), loc.getZ(), 0, 0);
@@ -157,8 +171,6 @@ public class Core extends JavaPlugin {
 						
 						PacketPlayOutEntityTeleport packetTeleportHologram = new PacketPlayOutEntityTeleport(hologram);
 						if (target.getHashHolograms().containsKey(viewer)) {
-							PlayerUpdateHologramEvent event = new PlayerUpdateHologramEvent(playerTarget, playerViewer, PlaceholderAPI.setPlaceholders(playerTarget, configgeral.getHologram_text()));
-							Bukkit.getPluginManager().callEvent(event);
 							hologram.setCustomName(event.getText());
 							PacketPlayOutEntityMetadata packetUpdate = new PacketPlayOutEntityMetadata(hologram.getId(), hologram.getDataWatcher(), true);
 							PlayerTag.sendPacket(playerViewer, packetUpdate);

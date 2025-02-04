@@ -1,16 +1,17 @@
 package me.htags.objects;
 
 import java.util.ArrayList;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.craftbukkit.v1_8_R3.CraftWorld;
 import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.metadata.FixedMetadataValue;
+
 import lombok.Getter;
 import lombok.Setter;
 import me.clip.placeholderapi.PlaceholderAPI;
@@ -34,6 +35,7 @@ public class PlayerTag {
 	private String name; // Nome do jogador
 	private Player player; // Objeto Player do Bukkit
 	private String idCode = randomCode(10); // Código único para cada jogador
+	private Location previewLocation;
 	private Scoreboard board; // Placar de pontuação
 	private boolean updating = false; // Status de atualização
 	private ScoreboardTeam team; // Time associado ao jogador
@@ -57,7 +59,6 @@ public class PlayerTag {
 			NBTTagCompound tag = new NBTTagCompound();
 			hologram.e(tag);
 			tag.setBoolean("Marker", true);
-			tag.setInt("Dimension", 100);
 			hologram.f(tag);
 		}
 		Manager.get().getPlayers().add(this);
@@ -81,16 +82,13 @@ public class PlayerTag {
 
 	// Atualiza a tag do jogador
 	public void update() {
-		if (updating)
-			return; // Evita múltiplas atualizações simultâneas
+		if (updating) return; // Evita múltiplas atualizações simultâneas
 		updating = true;
 		try {
 			Player p = getPlayer();
 			ConfigTag config = Manager.get().getTag(p);
 			// Se a configuração não existir, utiliza a configuração padrão
 			config = (config == null) ? Core.getInstance().getConfigtag() : config;
-
-			String color = ConfigGeral.get().getColorDefault();
 			reset(); // Reseta as configurações antigas
 
 			// Cria uma nova equipe para o jogador
@@ -101,7 +99,8 @@ public class PlayerTag {
 			for (Player viewer : Bukkit.getOnlinePlayers()) {
 				String prefix = config.getPrefix();
 				String suffix = config.getSuffix();
-
+				String color = ConfigGeral.get().getColorDefault();
+				
 				// Dispara o evento de atualização de tag
 				PlayerUpdateTagEvent event = new PlayerUpdateTagEvent(p, viewer, config, prefix, suffix, color);
 				Bukkit.getPluginManager().callEvent(event);
@@ -194,19 +193,24 @@ public class PlayerTag {
 	// Verifica se a instância de PlayerTag existe para o jogador, cria se não
 	// existir
 	public static PlayerTag check(Player p) {
-		// Verifica se o jogador já possui uma tag armazenada
-		if (p.hasMetadata("playertag")) {
-			return (PlayerTag) p.getMetadata("playertag").get(0).value();
-		}
+		try {
+			// Verifica se o jogador já possui uma tag armazenada
+			if (p.hasMetadata("playertag")) {
+				return (PlayerTag) p.getMetadata("playertag").get(0).value();
+			}
 
-		// Caso não tenha, cria uma nova instância
-		PlayerTag pt = Manager.get().getPlayer(p.getName());
-		if (pt == null) {
-			pt = new PlayerTag(p.getName());
-		}
+			// Caso não tenha, cria uma nova instância
+			PlayerTag pt = Manager.get().getPlayer(p.getName());
+			if (pt == null) {
+				pt = new PlayerTag(p.getName());
+			}
 
-		// Armazena a tag do jogador com a metadata
-		p.setMetadata("playertag", new FixedMetadataValue(Core.getInstance(), pt));
-		return pt;
+			// Armazena a tag do jogador com a metadata
+			p.setMetadata("playertag", new FixedMetadataValue(Core.getInstance(), pt));
+			return pt;
+		} catch (Exception e) {
+			p.removeMetadata("playertag", Core.getInstance());
+			return check(p);
+		}
 	}
 }
