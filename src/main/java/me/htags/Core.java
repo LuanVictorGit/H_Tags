@@ -1,8 +1,13 @@
 package me.htags;
 
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.bukkit.Bukkit;
-import org.bukkit.Location;
-import org.bukkit.craftbukkit.v1_8_R3.CraftWorld;
+import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -10,28 +15,20 @@ import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.potion.PotionEffectType;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 
 import lombok.Getter;
-import me.clip.placeholderapi.PlaceholderAPI;
 import me.htags.commands.TagCommand;
 import me.htags.objects.ConfigTag;
 import me.htags.objects.PlayerTag;
-import me.htags.objects.listeners.PlayerUpdateHologramEvent;
 import me.htags.objects.manager.Manager;
 import me.htags.utils.API;
-import me.htags.utils.ConfigGeral;
+import me.htags.utils.ConfigManager;
 import me.htags.utils.Tag;
-import net.minecraft.server.v1_8_R3.EntityArmorStand;
-import net.minecraft.server.v1_8_R3.PacketPlayOutEntityDestroy;
-import net.minecraft.server.v1_8_R3.PacketPlayOutEntityMetadata;
-import net.minecraft.server.v1_8_R3.PacketPlayOutEntityTeleport;
-import net.minecraft.server.v1_8_R3.PacketPlayOutSpawnEntityLiving;
-
+import me.htags.utils.listeners.ChatPlayerEvent;
 @Getter
 public class Core extends JavaPlugin {
 
@@ -40,8 +37,11 @@ public class Core extends JavaPlugin {
 	
 	private String tag, version = "§dv"+getDescription().getVersion();
 	private Manager manager;
-	private ConfigGeral configgeral;
+	private ConfigManager configgeral;
 	private API api;
+	private boolean hawkUtils;
+	private FileConfiguration configTags;
+	private File fileTags;
 	private BukkitTask task;
 	private ConfigTag configtag;
 	
@@ -51,7 +51,10 @@ public class Core extends JavaPlugin {
 		saveDefaultConfig();
 		reloadPlugin();
 		new TagCommand();
-		Bukkit.getPluginManager().registerEvents(new Listener() {
+		
+		List<Listener> listeners = new ArrayList<>();
+		if (hawkUtils) listeners.add(new ChatPlayerEvent());
+		listeners.add(new Listener() {
 			
 			@EventHandler(priority = EventPriority.HIGHEST)
 			public void join(PlayerJoinEvent e) {
@@ -66,17 +69,12 @@ public class Core extends JavaPlugin {
 			}
 			
 			@EventHandler(priority = EventPriority.HIGHEST)
-			public void move(PlayerMoveEvent e) {
-				if (!configgeral.isHolograms()) return;
-				PlayerTag.check(e.getPlayer()).setPreviewLocation(e.getTo().clone());
-			}
-			
-			@EventHandler(priority = EventPriority.HIGHEST)
 			public void death(PlayerDeathEvent e) {
 				Bukkit.getScheduler().runTask(Core.getInstance(), ()->Tag.updateAllTag());
 			}
 			
-		}, this);
+		});
+		listeners.forEach(listener -> Bukkit.getPluginManager().registerEvents(listener, this));
 		
 		sendConsole(" ");
 		sendConsole(tag + " &aH_Tags iniciado com sucesso! &6[Author lHawk_] " + version);
@@ -102,6 +100,24 @@ public class Core extends JavaPlugin {
 	public void reloadPlugin() {
 		reloadConfig();
 		tag = getConfig().getString("Config.tag").replace("&", "§");
+		hawkUtils = Bukkit.getPluginManager().getPlugin("HawkUtils") == null ? false : Bukkit.getPluginManager().getPlugin("HawkUtils").isEnabled(); 
+		fileTags = new File(getDataFolder()+"/tags.yml");
+		if (!fileTags.exists()) {
+			try {
+				fileTags.createNewFile();
+				YamlConfiguration yaml = YamlConfiguration.loadConfiguration(fileTags);
+				yaml.createSection("ceo");
+				ConfigurationSection section = yaml.getConfigurationSection("ceo");
+				section.set("permission", "*");
+				section.set("position", "A");
+				section.set("prefix", "&6[CEO] {cor}");
+				section.set("suffix", " &c%player_health%&4❤");
+				yaml.save(fileTags);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+		configTags = YamlConfiguration.loadConfiguration(fileTags);
 		sendConsole(tag + " &6recarregando informações do H_Tags...");
 		long time = System.currentTimeMillis();
 		if (manager!=null) {
@@ -113,79 +129,33 @@ public class Core extends JavaPlugin {
 		}
 		api = new API();
 		manager = new Manager();
-		for(String key : getConfig().getConfigurationSection("tags").getKeys(false)) new ConfigTag(key);
+		for(String key : configTags.getKeys(false)) new ConfigTag(key);
 		ConfigTag ct = new ConfigTag("defaultTag");
 		char[] alfabet = {'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z'};
 		ct.setPosition(String.valueOf(alfabet[manager.getTags().size()]).toUpperCase());
 		ct.setPrefix(getConfig().getString("Config.defaultPrefix").replace("&", "§"));
 		ct.setSuffix(getConfig().getString("Config.defaultSuffix").replace("&", "§"));
 		configtag = ct;
-		configgeral = new ConfigGeral();
+		configgeral = new ConfigManager();
 		for(Player p : Bukkit.getOnlinePlayers()) PlayerTag.check(p);
 		if (task!=null) task.cancel();
-		task = Bukkit.getScheduler().runTaskTimerAsynchronously(this, new Runnable() {
-			long currentTimeUpdate = 0;
-			
+		task = new BukkitRunnable() {
+			long currentTimeUpdate;
 			@Override
 			public void run() {
 				if (System.currentTimeMillis() - currentTimeUpdate >= (1000*getConfig().getInt("Config.updateTime"))) {
 					Tag.updateAllTag();
 					currentTimeUpdate = System.currentTimeMillis();
 				}
-				
 				if (!configgeral.isHolograms()) return;
 				if (manager.getPlayers().isEmpty()) return;
 				for (int i = 0; i < manager.getPlayers().size(); i++) {
 					PlayerTag target = manager.getPlayers().get(i);
 					Player playerTarget = target.getPlayer();
-					PlayerTag pt = PlayerTag.check(playerTarget);
-					EntityArmorStand hologram = target.getHologram();
-					loop: for (int j = 0; j < manager.getPlayers().size(); j++) {
-						PlayerTag viewer = manager.getPlayers().get(j);
-						Player playerViewer = viewer.getPlayer();
-						if (playerTarget.equals(playerViewer)) continue loop;
-						Location loc1 = pt.getPreviewLocation() == null ? playerTarget.getLocation() : pt.getPreviewLocation();
-						Location loc2 = playerViewer.getLocation();
-						PlayerUpdateHologramEvent event = new PlayerUpdateHologramEvent(playerTarget, playerViewer, PlaceholderAPI.setPlaceholders(playerTarget, configgeral.getHologram_text()));
-						Bukkit.getPluginManager().callEvent(event);
-						if (!loc1.getWorld().equals(loc2.getWorld()) || loc1.distance(loc2) > configgeral.getHologram_distance()
-							|| !playerTarget.isOnline() 
-							|| playerTarget.isDead() 
-							|| !playerViewer.canSee(playerTarget)
-							|| event.isCancelled()
-							|| playerTarget.getActivePotionEffects().stream().filter(potion -> potion.getType() == PotionEffectType.INVISIBILITY).findFirst().orElse(null) != null) {
-							if (target.getHashHolograms().containsKey(viewer)) {
-								PacketPlayOutEntityDestroy destroyHologram = new PacketPlayOutEntityDestroy(target.getHologram().getId());
-								PlayerTag.sendPacket(playerViewer, destroyHologram);
-								target.getHashHolograms().remove(viewer);
-							}
-							continue loop;
-						}
-						Location loc = pt.getPreviewLocation() == null ? playerTarget.getLocation() : pt.getPreviewLocation();
-						hologram.world = ((CraftWorld)loc.getWorld()).getHandle();
-						if (!playerTarget.isSneaking()) {
-							hologram.setLocation(loc.getX(), (loc.getY()+1.585)+configgeral.getHologram_height(), loc.getZ(), 0, 0);
-						} else {
-							hologram.setLocation(loc.getX(), (loc.getY()+1.25)+configgeral.getHologram_height(), loc.getZ(), 0, 0);
-						}
-						
-						PacketPlayOutEntityTeleport packetTeleportHologram = new PacketPlayOutEntityTeleport(hologram);
-						if (target.getHashHolograms().containsKey(viewer)) {
-							hologram.setCustomName(event.getText());
-							PacketPlayOutEntityMetadata packetUpdate = new PacketPlayOutEntityMetadata(hologram.getId(), hologram.getDataWatcher(), true);
-							PlayerTag.sendPacket(playerViewer, packetUpdate);
-							PlayerTag.sendPacket(playerViewer, packetTeleportHologram);
-							continue loop;
-						}
-						PacketPlayOutSpawnEntityLiving packetSpawnHologram = new PacketPlayOutSpawnEntityLiving(hologram);
-						PlayerTag.sendPacket(playerViewer, packetSpawnHologram);
-						PlayerTag.sendPacket(playerViewer, packetTeleportHologram);
-						target.getHashHolograms().put(viewer, target.getHologram());
-					}
+					api.updateHologramOfPlayer(playerTarget);
 				}
 			}
-			
-		}, 0, 1);
+		}.runTaskTimerAsynchronously(this, 0, 1);
 		sendConsole(tag + " &6todas as informações do H_Tags foram recarregadas em &e" + (System.currentTimeMillis()-time) + "ms&6!");
 	}
 	

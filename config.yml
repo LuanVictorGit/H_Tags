@@ -1,7 +1,12 @@
 # configuração geral do plugin
+# https://discord.gg/tNP6C8FRV2 - Support
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#
 # Permissôes:
 # h_tags.adm - acessar o comando de tags do servidor.
 Config:
+
+  # prefixo do servidor
   tag: "&6[Tag]"
   
   # configure a parte de cima do tab aqui
@@ -16,8 +21,11 @@ Config:
   - '&cAqui fica o footer'
   - ' '
   
-  # Tempo em segundos que vai atualizar o placar do jogador (não impacta na performance for se tratar de packets e estar em async.)
-  updateTime: 1
+  # ative o hawkutils caso você queira o menu para criação de cargos in-game.
+  hawkutils: true
+  
+  # Tempo em segundos que vai atualizar o placar do jogador (não impacta na performance for se tratar de packets, mas é bom manter um numero alto.)
+  updateTime: 5
   
   # ativar hologramas ao chegar perto do jogador ?
   holograms: true
@@ -25,30 +33,13 @@ Config:
   # coloque aqui o texto que ficará no holograma do jogador.
   hologram_text: "&c%player_health%&4❤"
   
-  # coloque aqui a altura do holograma na cabeça do jogador, deixe 0 como default.
-  hologram_height: 0
+  # coloque aqui a altura do holograma na cabeça do jogador, deixe 0 como default (abaixo do nick).
+  hologram_height: 0.45
   
   # distancia do jogador para ativar o holograma (em blocos).
   hologram_distance: 5
   
-  # configure aqui a tag default caso o jogador não tenha permissão.
+  # configure aqui a tag default caso o jogador não tenha nenhuma das permissões.
   defaultPrefix: "&7[J] {cor}"
   defaultSuffix: " &c%player_health%&4❤"
   colorDefault: "&7"
-
-# Config das tags
-# posição de A -> Z
-tags:
-  # aqui vai o nome do cargo
-  ceo:
-    # aqui vai a permissao para ter a tag.
-    permission: "*"
-    position: "A"
-    prefix: "&6[CEO] {cor}"
-    suffix: " &c%player_health%&4❤" # suffix com o placeholderapi
-  membro:
-    # aqui vai a permissao para ter a tag.
-    permission: "tags.membro"
-    position: "B"
-    prefix: "&6[CEO] {cor}"
-    suffix: " &c%player_health%&4❤" # suffix com o placeholderapi

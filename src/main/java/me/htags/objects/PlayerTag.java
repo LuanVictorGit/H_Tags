@@ -1,12 +1,12 @@
 package me.htags.objects;
 
 import java.util.ArrayList;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
 
 import org.bukkit.Bukkit;
-import org.bukkit.Location;
 import org.bukkit.craftbukkit.v1_8_R3.CraftWorld;
 import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer;
 import org.bukkit.entity.Player;
@@ -19,7 +19,7 @@ import me.htags.Core;
 import me.htags.objects.listeners.PlayerUpdateTagEvent;
 import me.htags.objects.manager.Manager;
 import me.htags.utils.API;
-import me.htags.utils.ConfigGeral;
+import me.htags.utils.ConfigManager;
 import net.minecraft.server.v1_8_R3.EntityArmorStand;
 import net.minecraft.server.v1_8_R3.NBTTagCompound;
 import net.minecraft.server.v1_8_R3.Packet;
@@ -35,11 +35,16 @@ public class PlayerTag {
 	private String name; // Nome do jogador
 	private Player player; // Objeto Player do Bukkit
 	private String idCode = randomCode(10); // Código único para cada jogador
-	private Location previewLocation;
 	private Scoreboard board; // Placar de pontuação
 	private boolean updating = false; // Status de atualização
 	private ScoreboardTeam team; // Time associado ao jogador
 	private EntityArmorStand hologram;
+	private ConfigTag tagSelected;
+	private boolean creatingTag = false,
+	settingPosition = false,
+	settingPermission = false,
+	settingPrefix = false,
+	settingSuffix = false;
 	private HashMap<PlayerTag, EntityArmorStand> hashHolograms = new HashMap<>();
 
 	// Construtor: Inicializa o objeto PlayerTag
@@ -48,7 +53,7 @@ public class PlayerTag {
 		this.board = new Scoreboard();
 		this.player = Bukkit.getPlayerExact(name);
 		this.update();
-		if (hologram == null && ConfigGeral.get().isHolograms()) {
+		if (hologram == null && ConfigManager.get().isHolograms()) {
 			hologram = new EntityArmorStand(((CraftWorld)player.getWorld()).getHandle(),0,0,0);
 			hologram.setCustomName(" ");
 			hologram.setCustomNameVisible(true);
@@ -62,6 +67,15 @@ public class PlayerTag {
 			hologram.f(tag);
 		}
 		Manager.get().getPlayers().add(this);
+	}
+	
+	public void resetSettings() {
+		tagSelected = null;
+		creatingTag = false;
+		settingPosition = false;
+		settingPermission = false;
+		settingPrefix = false;
+		settingSuffix = false;
 	}
 
 	// Reseta as tags e limpa o placar do jogador
@@ -99,7 +113,7 @@ public class PlayerTag {
 			for (Player viewer : Bukkit.getOnlinePlayers()) {
 				String prefix = config.getPrefix();
 				String suffix = config.getSuffix();
-				String color = ConfigGeral.get().getColorDefault();
+				String color = ConfigManager.get().getColorDefault();
 				
 				// Dispara o evento de atualização de tag
 				PlayerUpdateTagEvent event = new PlayerUpdateTagEvent(p, viewer, config, prefix, suffix, color);
@@ -135,7 +149,7 @@ public class PlayerTag {
 			}
 
 			// Atualiza o cabeçalho e rodapé do tablist
-			API.get().sendTablist(p, PlaceholderAPI.setPlaceholders(p, ConfigGeral.get().getHeader()), PlaceholderAPI.setPlaceholders(p, ConfigGeral.get().getFooter()));
+			API.get().sendTablist(p, PlaceholderAPI.setPlaceholders(p, ConfigManager.get().getHeader()), PlaceholderAPI.setPlaceholders(p, ConfigManager.get().getFooter()));
 
 			updating = false;
 		} catch (Exception e) {
@@ -209,7 +223,7 @@ public class PlayerTag {
 			p.setMetadata("playertag", new FixedMetadataValue(Core.getInstance(), pt));
 			return pt;
 		} catch (Exception e) {
-			p.removeMetadata("playertag", Core.getInstance());
+			if (p != null) p.removeMetadata("playertag", Core.getInstance());
 			return check(p);
 		}
 	}

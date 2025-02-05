@@ -3,6 +3,7 @@ version: 0.3
 author: lHawk_
 main: me.htags.Core
 depend: [PlaceholderAPI]
+softdepend: [HawkUtils]
 description: plugin para a gerencia de tags do servidor.
 commands:
   tag:

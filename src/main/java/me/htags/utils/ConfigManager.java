@@ -8,7 +8,7 @@ import me.htags.Core;
 
 // Configuração geral cacheada para uma busca mais rapida na memoria sem precisar acessar a config constantemente.
 @Getter
-public class ConfigGeral {
+public class ConfigManager {
 
 	private String colorDefault,
 	header, footer, hologram_text;
@@ -17,7 +17,7 @@ public class ConfigGeral {
 	private int hologram_distance;
 	private double hologram_height;
 	
-	public ConfigGeral() {
+	public ConfigManager() {
 		FileConfiguration config = Core.getInstance().getConfig();
 		ConfigurationSection section = config.getConfigurationSection("Config");
 		
@@ -40,7 +40,7 @@ public class ConfigGeral {
 		footer = footer.replaceFirst("\n", new String());
 	}
 	
-	public static ConfigGeral get() {
+	public static ConfigManager get() {
 		return Core.getInstance().getConfiggeral();
 	}
 	

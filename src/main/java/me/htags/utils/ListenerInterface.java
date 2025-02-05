@@ -10,7 +10,7 @@ import lombok.Setter;
 // classe para criar nova listener.
 @Getter
 @Setter
-public class Listener extends Event implements Cancellable {
+public class ListenerInterface extends Event implements Cancellable {
 
 	private static final HandlerList HANDLERS_LIST = new HandlerList();
 
