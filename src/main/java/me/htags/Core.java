@@ -59,13 +59,13 @@ public class Core extends JavaPlugin {
 			@EventHandler(priority = EventPriority.HIGHEST)
 			public void join(PlayerJoinEvent e) {
 				PlayerTag.check(e.getPlayer());
-				Tag.updateAllTag();
+				Bukkit.getScheduler().runTask(Core.getInstance(), ()->Tag.updateAllTag());
 			}
 			
 			@EventHandler(priority = EventPriority.HIGHEST)
 			public void quit(PlayerQuitEvent e) {
 				PlayerTag.check(e.getPlayer()).remove();
-				Tag.updateAllTag();
+				Bukkit.getScheduler().runTask(Core.getInstance(), ()->Tag.updateAllTag());
 			}
 			
 			@EventHandler(priority = EventPriority.HIGHEST)

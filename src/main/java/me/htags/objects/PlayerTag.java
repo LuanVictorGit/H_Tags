@@ -95,11 +95,17 @@ public class PlayerTag {
 	}
 
 	// Atualiza a tag do jogador
+	private byte attempts;
 	public void update() {
 		if (updating) return; // Evita múltiplas atualizações simultâneas
 		updating = true;
 		try {
 			Player p = getPlayer();
+			if (p == null || !p.isValid() || !p.isOnline() || attempts > 3) {
+				updating = false;
+				attempts = 0;
+				return;
+			}
 			ConfigTag config = Manager.get().getTag(p);
 			// Se a configuração não existir, utiliza a configuração padrão
 			config = (config == null) ? Core.getInstance().getConfigtag() : config;
@@ -118,6 +124,7 @@ public class PlayerTag {
 				// Dispara o evento de atualização de tag
 				PlayerUpdateTagEvent event = new PlayerUpdateTagEvent(p, viewer, config, prefix, suffix, color);
 				Bukkit.getPluginManager().callEvent(event);
+				if (event.isCancelled()) continue;
 
 				prefix = event.getPrefix();
 				suffix = event.getSuffix();
@@ -152,8 +159,10 @@ public class PlayerTag {
 			API.get().sendTablist(p, PlaceholderAPI.setPlaceholders(p, ConfigManager.get().getHeader()), PlaceholderAPI.setPlaceholders(p, ConfigManager.get().getFooter()));
 
 			updating = false;
+			attempts = 0;
 		} catch (Exception e) {
 			updating = false;
+			attempts++;
 			update();
 		}
 	}
