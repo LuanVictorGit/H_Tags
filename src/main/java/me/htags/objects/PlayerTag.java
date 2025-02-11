@@ -203,7 +203,7 @@ public class PlayerTag {
 
 	// Remove o jogador da Manager
 	public void remove() {
-		player.removeMetadata("playertag", Core.getInstance());
+		if (player != null) player.removeMetadata("playertag", Core.getInstance());
 		Manager.get().getPlayers().remove(this);
 		if (hologram != null) {
 			Bukkit.getOnlinePlayers().forEach(all -> {
@@ -227,7 +227,7 @@ public class PlayerTag {
 			if (pt == null) {
 				pt = new PlayerTag(p.getName());
 			}
-
+			pt.setPlayer(p);
 			// Armazena a tag do jogador com a metadata
 			p.setMetadata("playertag", new FixedMetadataValue(Core.getInstance(), pt));
 			return pt;

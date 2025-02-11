@@ -4,24 +4,13 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>H_Tags</groupId>
 	<artifactId>H_Tags</artifactId>
-	<version>0.2</version>
+	<version>0.0.1-SNAPSHOT</version>
 	<properties>
 		<my-library-systemPath>C:\Users\Luan Victor\Desktop\dependencies_spigot</my-library-systemPath>
 		<lombok-version>1.18.36</lombok-version>
 		<maven.compiler.source>1.8</maven.compiler.source>
 		<maven.compiler.target>1.8</maven.compiler.target>
 	</properties>
-
-	<repositories>
-		<repository>
-			<id>codemc-releases</id>
-			<url>https://repo.codemc.io/repository/maven-releases/</url>
-		</repository>
-		<repository>
-			<id>codemc-snapshots</id>
-			<url>https://repo.codemc.io/repository/maven-snapshots/</url>
-		</repository>
-	</repositories>
 
 	<dependencies>
 		<dependency>

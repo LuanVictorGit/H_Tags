@@ -1,5 +1,5 @@
 name: H_Tags
-version: 0.4
+version: 0.5
 author: lHawk_
 main: me.htags.Core
 depend: [PlaceholderAPI]
